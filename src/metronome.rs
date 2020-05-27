@@ -42,7 +42,7 @@ impl Metronome {
     pub fn new(bpm: u16, upper: u8, lower: u8) -> Metronome {
         Metronome {
             metronome_settings: MetronomeSettings {
-                bpm: bpm,
+                bpm,
                 time_signature: TimeSignature { upper, lower },
             },
             current_beat: 0,
@@ -68,13 +68,15 @@ impl Metronome {
         let (tx, rx) = channel();
 
         thread::spawn(move || loop {
-            let msg = rx.recv_timeout(self.beat_delta);
+            self.play_beat();
+            let sleep_time = self.beat_delta - (Instant::now() - self.last_time_run);
+
+            let msg = rx.recv_timeout(sleep_time);
             match msg {
                 Ok(MetronomeControls::Stop) => break,
                 Err(_) => (),
             }
-            println!("{:?}", (std::time::Instant::now() - self.last_time_run));
-            self.play_beat();
+
             self.next();
         });
 

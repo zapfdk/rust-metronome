@@ -4,9 +4,7 @@ mod metronome;
 mod settings;
 
 fn main() {
-    if !audio_handling::check_audio_files() {
-        panic!("Audio files missing!");
-    }
+    audio_handling::check_audio_files();
 
     let metronome: metronome::Metronome = io::ask_metronome_settings();
 

@@ -1,18 +1,16 @@
-use rodio;
 use std::io::BufReader;
 use std::path::Path;
 
 const TIC_PATH: &str = "./tic.wav";
 const TOC_PATH: &str = "./toc.wav";
-const AUDIO_FILE_PATHS: [&'static str; 2] = [TIC_PATH, TOC_PATH];
+const AUDIO_FILE_PATHS: [&str; 2] = [TIC_PATH, TOC_PATH];
 
-pub fn check_audio_files() -> bool {
+pub fn check_audio_files() {
     for file_path in AUDIO_FILE_PATHS.iter() {
         if !Path::new(&file_path).exists() {
-            return false;
+            panic!("Audio files missing!");
         }
     }
-    true
 }
 
 // fn read_audio_file(file_path: &str) -> rodio::Decoder<BufReader<File>> {
@@ -45,7 +43,8 @@ impl AudioSettings {
             TicToc::Toc => TOC_PATH,
         };
         let audio_file = std::fs::File::open(file_path).unwrap();
-        rodio::play_once(&self.device, BufReader::new(audio_file)).unwrap().detach();
-        println!("{:?}", what);
+        rodio::play_once(&self.device, BufReader::new(audio_file))
+            .unwrap()
+            .detach();
     }
 }
