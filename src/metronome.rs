@@ -1,7 +1,10 @@
-use std::sync::mpsc::{channel, RecvTimeoutError, Sender};
+use std::sync::mpsc::{channel, Sender};
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
+
+use crate::audio_handling::AudioSettings;
+use crate::audio_handling::TicToc;
 
 pub fn calc_beat_delta(bpm: u16, lower: u8) -> Duration {
     let quarter_note_sec: f64 = 60f64 / bpm as f64;
@@ -10,13 +13,13 @@ pub fn calc_beat_delta(bpm: u16, lower: u8) -> Duration {
     Duration::from_secs_f64(quarter_note_sec * factor)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct TimeSignature {
     upper: u8,
     lower: u8,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct MetronomeSettings {
     bpm: u16,
     time_signature: TimeSignature,
@@ -27,7 +30,7 @@ pub enum MetronomeControls {
     Stop,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Metronome {
     metronome_settings: MetronomeSettings,
     current_beat: u8,
@@ -47,9 +50,17 @@ impl Metronome {
             beat_delta: calc_beat_delta(bpm, lower),
         }
     }
-    pub fn next(&mut self) {
+    fn next(&mut self) {
         self.current_beat = (self.current_beat + 1) % self.metronome_settings.time_signature.upper;
         self.last_time_run = std::time::Instant::now();
+    }
+
+    fn play_beat(self) {
+        let audio_settings: AudioSettings = AudioSettings::load();
+        match self.current_beat {
+            0 => audio_settings.play(TicToc::Tic),
+            _ => audio_settings.play(TicToc::Toc),
+        }
     }
 
     pub fn start(mut self) -> Sender<MetronomeControls> {
@@ -62,6 +73,8 @@ impl Metronome {
                 Ok(MetronomeControls::Stop) => break,
                 Err(_) => (),
             }
+            println!("{:?}", (std::time::Instant::now() - self.last_time_run));
+            self.play_beat();
             self.next();
         });
 
